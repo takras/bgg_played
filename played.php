@@ -22,8 +22,7 @@ function bgg_fetch_data( $enddate, $limit ) {
 	}
 	
 	// Get settings
-	//$bgg_username = get_option( 'bgg_username' );
-	$bgg_username = "aleajactaest";
+	$bgg_username = get_option( 'bgg_username' );
 	$apiname = "plays";
 	
 	// URL variables
@@ -275,6 +274,14 @@ class BGGSettingsPage
             'bgg_section'
         );
 
+        add_settings_field(
+            'bgg_limit_widget',
+            'Maximum number of games to display for Widget',
+            array( $this, 'widget_limit_callback' ),
+            'bgg-setting-admin',
+            'bgg_section'
+        );
+
 		add_settings_field(
             'bgg_stylesheet',
             'CSS',
@@ -306,6 +313,11 @@ class BGGSettingsPage
             $new_input['bgg_limit'] = sanitize_text_field( $input['bgg_limit'] );
 			update_option( 'bgg_limit', $new_input['bgg_limit'] );
 		}
+
+		if( isset( $input['widget_bgg_limit'] ) ) {
+            $new_input['widget_bgg_limit'] = sanitize_text_field( $input['widget_bgg_limit'] );
+			update_option( 'widget_bgg_limit', $new_input['widget_bgg_limit'] );
+		}
 		
         return $new_input;
 		
@@ -321,7 +333,7 @@ class BGGSettingsPage
     {
         printf(
             '<input type="text" id="bgg_username" name="bgg_option_name[bgg_username]" value="%s" />',
-            get_option('bgg_username') != "" ? esc_attr( get_option('bgg_username') ) : ''
+            get_option('bgg_username')
         );
     }
 	
@@ -340,6 +352,14 @@ class BGGSettingsPage
             get_option('bgg_limit') != "" ? esc_attr( get_option('bgg_limit') ) : 5
         );
     }
+
+    public function widget_limit_callback()
+    {
+        printf(
+            '<input type="text" id="widget_bgg_limit" name="bgg_option_name[widget_bgg_limit]" value="%s" />',
+            get_option('widget_bgg_limit') != "" ? esc_attr( get_option('widget_bgg_limit') ) : 4
+        );
+    }
 }
 
 if( is_admin() )
@@ -348,12 +368,13 @@ if( is_admin() )
 // Manually save options, due to redirect-problems
 function bgg_post() {
 	if( isset( $_POST['option_page'] ) ){
-	
-		get_option('bgg_option_name');
+
 
 		if(!isset($_POST['bgg_option_name']['bgg_username'])) { 
-			$_POST['bgg_option_name']['bgg_username'] = 'false';
+			$error_list[] = 'bgg_username';
 		}
+
+		//if( count($error_list) > 0 ) return $error_list;
 	
 		foreach((array)$_POST['bgg_option_name'] as $key => $value){
 			update_option( $key, $value );
@@ -391,7 +412,7 @@ class BGG_Widget extends WP_Widget {
 		}
 		
 		// Main
-		bgg_fetch_data( date( 'Y-m-d' ), 4 );
+		bgg_fetch_data( date( 'Y-m-d' ), get_option( 'widget_bgg_limit' ) );
 		echo '<a class="moreplayed" href="http://aleajactaest.no/?p=126" rel="bookmark">Se flere spill</a>';
 		
 		// End
