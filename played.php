@@ -23,20 +23,14 @@ function bgg_fetch_data( $enddate, $limit ) {
 	
 	// Get settings
 	$bgg_username = get_option( 'bgg_username' );
-	$apiname = "plays";
 	
 	// URL variables
-	$startdate = date( 'Y-m-d', strtotime( $enddate . ' -60 days' ) );
-	$username_url = $bgg_username;
-	$startdate_url = "&mindate=" . $startdate;
-	$enddate_url = "&maxdate=" . $enddate;
+	$username = $bgg_username;
 	$type_url = "&subtype=boardgame";
 
-	$request= "http://bgg-json.azurewebsites.net/$apiname/$username_url";
-	//$request = "http://www.boardgamegeek.com/xmlapi2/" . $apiname . $username_url . $startdate_url . $enddate_url . $type_url;
+	$request= "http://bgg-json.azurewebsites.net/plays/$username";
 	$response = file_get_contents( $request );
 	$results = json_decode( $response, TRUE );
-	//$results = new SimpleXMLElement( $response );
 	bgg_display( $results, $limit );
 }
 
@@ -96,86 +90,6 @@ function bgg_thumbnail( $gameid ) {
 	return $xml->boardgame->thumbnail;
 }
 
-// CSS for the games
-function bgg_stylesheet() {
-	$css = get_option( 'bgg_stylesheet' );
-	$default_css = get_default_css();
-
-	if( $css == "" ) {
-		$css = $default_css;
-		update_option( 'bgg_stylesheet', $default_css );
-	}
-	
-	$css_start = "<style type='text/css'>";
-	$css_end = "</style>";
-	
-	echo $css_start . $css . $css_end;
-	
-}
-
-function get_default_css() {
-	return "
-.bgg_game .image_box {
-	float: left;
-	width: 100px;
-	height: 100px;
-	overflow: hidden;
-	text-align: center;
-	margin-right:14px;
-}
-.bgg_game img {
-	height: 100%;
-}
-.bgg_game p {
-	vertical_align: top;
-	font-family:Constantia, 'Lucida Bright', 'DejaVu Serif', Georgia, serif;
-	font-size:13px;
-	line-height:17px;
-}
-.bgg_game {
-	clear:both;
-	min-height: 100px;
-	padding: 5px;
-	z-index: 1;
-}
-.alt {
-	background-color: #EEEEEE;
-}
-.played_date {
-	font-style: italic;
-}
-
-.moreplayed {
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 11px;
-	font-weight: 600;
-	background: #000;
-	text-transform: uppercase;
-	text-align: center;
-	margin: 0px auto 10px;
-	padding: 5px 0px;
-	width: 280px;
-	float: left;
-	color: #FFF !important;
-	text-decoration: none !important;
-}
-
-.moreplayed a:focus {
-	color: #000 !important;
-}
-.dateheader {
-	font-size: large;
-	text-align: center;
-	margin: 0;
-	border-top: 5px solid #151515;
-	padding: 0px 0px 10px 0px;
-}
-.first {
-	border-top: 0 !important;
-}
-";
-}
-
 // Initial function
 function bgg_get_played_games( $attributes ) {
 	if( !empty( $_GET['date'] ) ) {
@@ -187,6 +101,9 @@ function bgg_get_played_games( $attributes ) {
 }
 
 add_shortcode( 'bgg_played', 'bgg_get_played_games' );
+wp_register_style( 'bggplayed', plugins_url( 'bggplayed/bggplayed.css' ) );
+wp_enqueue_style( 'bggplayed' );
+
 add_action( 'wp_head', 'bgg_stylesheet' );
 
 
@@ -281,14 +198,6 @@ class BGGSettingsPage
             'bgg-setting-admin',
             'bgg_section'
         );
-
-		add_settings_field(
-            'bgg_stylesheet',
-            'CSS',
-            array( $this, 'stylesheet_callback' ),
-            'bgg-setting-admin',
-            'bgg_section'
-        );
 		
     }
 
@@ -334,14 +243,6 @@ class BGGSettingsPage
         printf(
             '<input type="text" id="bgg_username" name="bgg_option_name[bgg_username]" value="%s" />',
             get_option('bgg_username')
-        );
-    }
-	
-	public function stylesheet_callback()
-    {
-        printf(
-            '<textarea cols="50" rows="20" id="bgg_stylesheet" name="bgg_option_name[bgg_stylesheet]">%s</textarea><br/>To reset to default, just clear the CSS and save',
-            get_option('bgg_stylesheet') != "" ? esc_attr( get_option('bgg_stylesheet') ) : get_default_css()
         );
     }
 	
@@ -413,7 +314,7 @@ class BGG_Widget extends WP_Widget {
 		
 		// Main
 		bgg_fetch_data( date( 'Y-m-d' ), get_option( 'widget_bgg_limit' ) );
-		echo '<a class="moreplayed" href="http://aleajactaest.no/?p=126" rel="bookmark">Se flere spill</a>';
+		echo '<a class="moreplayed" href="http://aleajactaest.no/spilte-spill/" rel="bookmark">Se flere spill</a>';
 		
 		// End
 		echo $args['after_widget'];
